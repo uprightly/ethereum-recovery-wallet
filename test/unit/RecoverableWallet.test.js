@@ -28,8 +28,9 @@ contract('RecoverableWallet', function ([creator, user, recoveryUser, randomUser
     await advanceBlock();
   });
 
-  it("should...", async function () {
-
+  it("should have an owner", async function () {
+    const ownerValue = await this.wallet.owner();
+    ownerValue.should.equal(creator);
   });
 
 
