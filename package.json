@@ -26,6 +26,7 @@
     "chai-bignumber": "^2.0.2"
   },
   "dependencies": {
+    "openzeppelin-solidity": "1.12.0",
     "truffle": "^4.0.0",
     "truffle-hdwallet-provider": "0.0.3",
     "zeppelin-solidity": "^1.10.0"
