@@ -1,22 +1,18 @@
 pragma solidity ^0.4.24;
 
+import 'openzeppelin-solidity/contracts/ownership/Ownable.sol';
 
-contract Recoverable {
-  address public owner_;
+contract Recoverable is Ownable{
   address private recoverer_;
   uint256 private recoveryTimeRequired_;
   uint256 private timeOfRecovery_;
 
-  event OwnerChanged(
-    address indexed previousOwner,
-    address indexed newOwner
-  );
   event RecovererChanged(
-    address indexed owner_,
+    address indexed owner,
     address indexed newRecoverer
   );
   event RecoveryStarted(
-    address indexed owner_,
+    address indexed owner,
     address indexed recoverer_,
     uint256 timeOfRecovery
   );
@@ -24,15 +20,7 @@ contract Recoverable {
     address indexed previousOwner,
     address indexed newOwner
   );
-  event OwnerBlockedRecovery(address indexed owner_);
-
-  /**
-   * Check that a function is called by the owner_
-   */
-  modifier isOwner() {
-    require(msg.sender == owner_);
-    _;
-  }
+  event OwnerBlockedRecovery(address indexed owner);
 
   /**
    * Check that a function is called by the recoverer_
@@ -43,20 +31,19 @@ contract Recoverable {
   }
 
   /**
-   * Creates a recoverable contract with owner set to the original sender and
-   * required recovery time set by the original sender
+   * Creates a recoverable contract with required recovery time set by
+   * the original sender
    */
   constructor(uint256 _recoveryTime) public {
-    owner_ = msg.sender;
     recoveryTimeRequired_ = _recoveryTime;
   }
 
   /**
    * The owner can set a new recoverer when they wish
    */
-  function setRecoverer(address _newRecoverer) public isOwner {
-    require(_newRecoverer != owner_);
-    emit RecovererChanged(owner_, _newRecoverer);
+  function setRecoverer(address _newRecoverer) public onlyOwner {
+    require(_newRecoverer != owner);
+    emit RecovererChanged(owner, _newRecoverer);
     recoverer_ = _newRecoverer;
   }
 
@@ -75,7 +62,7 @@ contract Recoverable {
   /**
    * Owner can remove the recoverer
    */
-  function removeRecoverer() public isOwner {
+  function removeRecoverer() public onlyOwner {
     recoverer_ = address(0);
   }
 
@@ -83,17 +70,17 @@ contract Recoverable {
    * Recoverer can start a recovery by announcing it.
    * Recoverer will have to wait for the recovery time required.
    */
-  function announceRecovery() public isOwner {
+  function announceRecovery() public onlyOwner {
     require(recoveryTimeLapsed());
     timeOfRecovery_ = block.timestamp;
-    emit RecoveryStarted(owner_, recoverer_, timeOfRecovery_);
+    emit RecoveryStarted(owner, recoverer_, timeOfRecovery_);
   }
 
   /**
    * Owner can block recovery if they deem it illegitimate
    */
-  function blockRecovery() public isOwner {
-    emit OwnerBlockedRecovery(owner_);
+  function blockRecovery() public onlyOwner {
+    emit OwnerBlockedRecovery(owner);
     timeOfRecovery_ = 0;
   }
 
@@ -103,7 +90,7 @@ contract Recoverable {
    */
   function recoverContract() public isRecoverer {
     require(recoveryTimeLapsed());
-    emit Recovered(owner_, recoverer_);
+    emit Recovered(owner, recoverer_);
     transferOwnership(recoverer_);
     timeOfRecovery_ = 0;
   }
@@ -113,21 +100,5 @@ contract Recoverable {
    */
   function recoveryTimeLapsed() internal view returns (bool) {
     return block.timestamp >= timeOfRecovery_ + recoveryTimeRequired_;
-  }
-
-  /**
-   * The owner can transfer ownership of the contract
-   */
-  function transferOwnership(address _newOwner) public isOwner {
-    _transferOwnership(_newOwner);
-  }
-
-  /**
-   * The transfer mechanism
-   */
-  function _transferOwnership(address _newOwner) internal {
-    require(_newOwner != address(0));
-    emit OwnerChanged(owner_, _newOwner);
-    owner_ = _newOwner;
   }
 }
