@@ -4,7 +4,7 @@ pragma solidity ^0.4.24;
 contract Recoverable {
   address public owner_;
   address private recoverer_;
-  uint256 private recoveryTimeRequred_;
+  uint256 private recoveryTimeRequired_;
   uint256 private timeOfRecovery_;
 
   event OwnerChanged(
@@ -17,7 +17,7 @@ contract Recoverable {
   );
   event RecoveryStarted(
     address indexed owner_,
-    address indexed heir,
+    address indexed recoverer_,
     uint256 timeOfRecovery
   );
   event Recovered(
@@ -48,7 +48,7 @@ contract Recoverable {
    */
   constructor(uint256 _recoveryTime) public {
     owner_ = msg.sender;
-    recoveryTimeRequred_ = _recoveryTime;
+    recoveryTimeRequired_ = _recoveryTime;
   }
 
   /**
@@ -64,8 +64,8 @@ contract Recoverable {
     return recoverer_;
   }
 
-  function recoveryTimeRequred() public view returns(uint256) {
-    return recoveryTimeRequred_;
+  function recoveryTimeRequired() public view returns(uint256) {
+    return recoveryTimeRequired_;
   }
 
   function timeOfRecovery() public view returns(uint256) {
@@ -85,8 +85,8 @@ contract Recoverable {
    */
   function announceRecovery() public isOwner {
     require(recoveryTimeLapsed());
-    emit RecoveryStarted(owner_, recoverer_, timeOfRecovery_);
     timeOfRecovery_ = block.timestamp;
+    emit RecoveryStarted(owner_, recoverer_, timeOfRecovery_);
   }
 
   /**
@@ -112,7 +112,7 @@ contract Recoverable {
    * Check for whether recovery time has lapsed
    */
   function recoveryTimeLapsed() internal view returns (bool) {
-    return block.timestamp <= timeOfRecovery_ + recoveryTimeRequred_;
+    return block.timestamp >= timeOfRecovery_ + recoveryTimeRequired_;
   }
 
   /**
