@@ -6,13 +6,14 @@ contract Recoverable is Ownable{
   address private recoverer_;
   uint256 private recoveryTimeRequired_;
   uint256 private timeOfRecovery_;
+  address public recoveryAddress;
 
   event RecovererChanged(
     address indexed owner,
     address indexed newRecoverer
   );
   event RecoveryStarted(
-    address indexed owner,
+    address indexed recoveryAddress,
     address indexed recoverer_,
     uint256 timeOfRecovery
   );
@@ -21,6 +22,7 @@ contract Recoverable is Ownable{
     address indexed newOwner
   );
   event OwnerBlockedRecovery(address indexed owner);
+  event Sent(address indexed payee, uint256 amount, uint256 balance);
 
   /**
    * Check that a function is called by the recoverer_
@@ -70,10 +72,11 @@ contract Recoverable is Ownable{
    * Recoverer can start a recovery by announcing it.
    * Recoverer will have to wait for the recovery time required.
    */
-  function announceRecovery() public onlyOwner {
+  function announceRecovery(address _newAddress) public isRecoverer {
     require(recoveryTimeLapsed());
     timeOfRecovery_ = block.timestamp;
-    emit RecoveryStarted(owner, recoverer_, timeOfRecovery_);
+    recoveryAddress = _newAddress;
+    emit RecoveryStarted(recoveryAddress, recoverer_, timeOfRecovery_);
   }
 
   /**
@@ -91,7 +94,7 @@ contract Recoverable is Ownable{
   function recoverContract() public isRecoverer {
     require(recoveryTimeLapsed());
     emit Recovered(owner, recoverer_);
-    transferOwnership(recoverer_);
+    sendTo(recoveryAddress, balance);
     timeOfRecovery_ = 0;
   }
 
@@ -100,5 +103,12 @@ contract Recoverable is Ownable{
    */
   function recoveryTimeLapsed() internal view returns (bool) {
     return block.timestamp >= timeOfRecovery_ + recoveryTimeRequired_;
+  }
+
+  function _sendTo(address _payee, uint256 _amount) private {
+    require(_payee != address(0) && _payee != address(this));
+    require(_amount > 0);
+    _payee.transfer(_amount);
+    emit Sent(_payee, _amount, address(this).balance);
   }
 }
