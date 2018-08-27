@@ -94,7 +94,7 @@ contract Recoverable is Ownable{
   function recoverContract() public isRecoverer {
     require(recoveryTimeLapsed());
     emit Recovered(owner, recoverer_);
-    _sendTo(recoveryAddress, balance);
+    _sendTo(recoveryAddress, address(this).balance);
     timeOfRecovery_ = 0;
   }
 
